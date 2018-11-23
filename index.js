@@ -36,14 +36,20 @@ function remoteVersion(localPackage, callback) {
       return callback(err);
     }
 
-    for (let remoteVersion in message) break;
-    if (remoteVersion) {
-      return callback(null, remoteVersion);
+    let version = false;
+    for (let key in message) {
+      if (key) {
+        version = key;
+        break;
+      }
     }
 
-    callback('No version of this package has yet been published for tag "' + npm.config.get('tag') + '".\n' +
-      'You must publish manually the first release of your module');
+    if (version) {
+      return callback(null, version);
+    }
 
+    return callback('No version of this package has yet been published for tag "' + npm.config.get('tag') + '".\n' +
+      'You must publish manually the first release of your module');
   });
 }
 exports.remoteVersion = remoteVersion;
@@ -58,12 +64,12 @@ exports.publish = (options, callback) => {
         return callback('you have not defined a version in your npm module, check your package.json');
       }
 
-      remoteVersion(pkg, (err, remoteVersion) => {
+      remoteVersion(pkg, (err, remote) => {
         if (err) {
           return callback(err);
         }
 
-        if (!shouldPublish(options, localVersion, remoteVersion)) {
+        if (!shouldPublish(options, localVersion, remote)) {
           if (options.test) {
             process.exit(1);
           }
@@ -89,19 +95,19 @@ const npmPublish = (callback) => {
   });
 }
 
-const shouldPublish = (options, localVersion, remoteVersion) => {
+const shouldPublish = (options, local, remote) => {
   options = options || {};
 
-  log.info('Local version: ' + localVersion);
-  log.info('Published version: ' + remoteVersion);
-  if (semver.eq(remoteVersion, localVersion)) {
+  log.info('Local version: ' + local);
+  log.info('Published version: ' + remote);
+  if (semver.eq(remote, local)) {
     log.info('Your local version is the same as your published version: publish will do nothing');
     return false;
-  } else if (semver.gt(remoteVersion, localVersion)) {
+  } else if (semver.gt(remote, local)) {
     log.warn('Your local version is smaller than your published version: publish will do nothing');
     return false;
   } else if (containsOnVersion(options)) {
-    let diff = semver.diff(remoteVersion, localVersion);
+    let diff = semver.diff(remote, local);
     if (!options['on-' + diff]) {
       log.info('Your local version does not satisfy your --on-[major|minor|patch|build] options; publish will do nothing');
       return false;
