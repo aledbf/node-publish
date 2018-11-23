@@ -1,95 +1,95 @@
-var npm = require('npm'),
-    semver = require('semver'),
-    fs = require('fs'),
-    log = require('npmlog');
-
+const npm = require('npm');
+const semver = require('semver');
+const fs = require('fs');
+const log = require('npmlog');
 log.heading = 'publish';
 
-exports.start = function(tagName, callback) {
-  var loadOptions = {};
+exports.start = (tagName, callback) => {
+  let loadOptions = {};
   if (tagName) {
     log.info('Using tag', tagName);
     loadOptions.tag = tagName;
   }
-  npm.load(loadOptions, function(err) {
+
+  npm.load(loadOptions, (err) => {
     callback(err, npm);
   });
 };
 
-function localPackage(callback) {
+const readLocalPackage = (callback) => {
   try {
     callback(null, JSON.parse(fs.readFileSync('./package.json')));
   } catch (err) {
     callback(err);
   }
 }
-exports.localPackage = localPackage;
+exports.localPackage = readLocalPackage;
 
 function remoteVersion(localPackage, callback) {
-  npm.commands.view([localPackage.name, 'version'], true, function(err, message) {
+  npm.commands.view([localPackage.name, 'version'], true, (err, message) => {
     if (err) {
       if (err.code === 'E404') {
-            callback('You have not published yet your first version of this module: publish will do nothing\n' +
-            'You must publish manually the first release of your module');
-      } else {
-            callback(err);
+        return callback('You have not published yet your first version of this module: publish will do nothing\n' +
+          'You must publish manually the first release of your module');
       }
-    } else {
-      for (var remoteVersion in message) break;
-      if (remoteVersion) {
-        callback(null, remoteVersion);
-      } else {
-        callback('No version of this package has yet been published for tag "' + npm.config.get('tag') + '".\n' +
-            'You must publish manually the first release of your module');
-      }
+
+      return callback(err);
     }
+
+    for (let remoteVersion in message) break;
+    if (remoteVersion) {
+      return callback(null, remoteVersion);
+    }
+
+    callback('No version of this package has yet been published for tag "' + npm.config.get('tag') + '".\n' +
+      'You must publish manually the first release of your module');
+
   });
 }
 exports.remoteVersion = remoteVersion;
 
-exports.publish = function(options, callback) {
-  localPackage(function(err, pkg) {
+exports.publish = (options, callback) => {
+  readLocalPackage((err, pkg) => {
     if (err) {
       callback('publish can only be performed from the root of npm modules (where the package.json resides)');
     } else {
-      var localVersion = pkg.version;
+      let localVersion = pkg.version;
       if (localVersion == null) {
-        callback('you have not defined a version in your npm module, check your package.json');
+        return callback('you have not defined a version in your npm module, check your package.json');
       }
 
-      remoteVersion(pkg, function(err, remoteVersion) {
+      remoteVersion(pkg, (err, remoteVersion) => {
         if (err) {
-          callback(err);
+          return callback(err);
         }
 
         if (!shouldPublish(options, localVersion, remoteVersion)) {
           if (options.test) {
             process.exit(1);
           }
-        }else {
+        } else {
           if (!options.test) {
             npmPublish(callback);
-          }          
+          }
         }
       });
     }
   });
 };
 
-
-function npmPublish(callback) {
-  npm.commands.publish([], false, function(err, message) {
+const npmPublish = (callback) => {
+  npm.commands.publish([], false, (err, message) => {
     if (err) {
       log.error('publish failed:', message);
-      callback(err);
-    } else {
-      log.info('published ok');
-      callback();
+      return callback(err);
     }
+
+    log.info('published ok');
+    return callback();
   });
 }
 
-function shouldPublish(options, localVersion, remoteVersion) {
+const shouldPublish = (options, localVersion, remoteVersion) => {
   options = options || {};
 
   log.info('Local version: ' + localVersion);
@@ -101,7 +101,7 @@ function shouldPublish(options, localVersion, remoteVersion) {
     log.warn('Your local version is smaller than your published version: publish will do nothing');
     return false;
   } else if (containsOnVersion(options)) {
-    var diff = semver.diff(remoteVersion, localVersion);
+    let diff = semver.diff(remoteVersion, localVersion);
     if (!options['on-' + diff]) {
       log.info('Your local version does not satisfy your --on-[major|minor|patch|build] options; publish will do nothing');
       return false;
@@ -113,6 +113,6 @@ function shouldPublish(options, localVersion, remoteVersion) {
 }
 exports.shouldPublish = shouldPublish;
 
-function containsOnVersion(options) {
+const containsOnVersion = (options) => {
   return options['on-major'] || options['on-minor'] || options['on-patch'] || options['on-build'];
 }

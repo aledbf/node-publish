@@ -1,6 +1,6 @@
 {
   "name": "publish",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "npm auto publishing of your modules",
   "main": "index.js",
   "homepage": "https://github.com/cmanzana/node-publish",
@@ -11,10 +11,10 @@
     "test": "mocha --globals name"
   },
   "dependencies": {
-    "npm": "3.x.x",
-    "npmlog": "2.x.x",
-    "semver": "5.x.x",
-    "nopt": "3.x.x"
+    "nopt": "^4.0.1",
+    "npm": "^6.4.1",
+    "npmlog": "^4.1.2",
+    "semver": "^5.6.0"
   },
   "repository": {
     "type": "git",
@@ -27,7 +27,7 @@
     "CI"
   ],
   "devDependencies": {
-    "mocha": "^2.4.5"
+    "mocha": "^5.2.0"
   },
   "author": "Carlos Manzanares <carlos.manzanares@gmail.com>",
   "license": "MIT"
